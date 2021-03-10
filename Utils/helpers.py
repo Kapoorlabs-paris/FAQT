@@ -10,13 +10,13 @@ from __future__ import print_function, unicode_literals, absolute_import, divisi
 #import matplotlib.pyplot as plt
 import numpy as np
 import os
-from tqdm import tqdm
+
 import collections
 
 import warnings
 import csv
 from skimage.morphology import skeletonize
-import cv2
+
 from skimage.filters import gaussian
 from six.moves import reduce
 from skimage.feature import canny
