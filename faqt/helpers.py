@@ -41,6 +41,7 @@ from skimage.filters import sobel
 from skimage.measure import label
 from scipy import spatial
 import zipfile
+from csbdeep.data import  create_patches,create_patches_reduced_target, RawData
 from skimage import transform
 
 def _fill_label_holes(lbl_img, **kwargs):
@@ -477,6 +478,47 @@ def AsymmetryComputer(MaskResults,AsymmetryResults,AsymmetryResultsName, extra_t
                   plt.ylabel("Area")
                   plt.xlabel("Filenumber")
                   plt.show()
+    
+def generate_2D_patch_training_data(BaseDirectory, SaveNpzDirectory, SaveName, patch_size = (512,512), n_patches_per_image = 64, transforms = None):
+
+    
+    raw_data = RawData.from_folder (
+    basepath    = BaseDirectory,
+    source_dirs = ['Original'],
+    target_dir  = 'BinaryMask',
+    axes        = 'YX',
+    )
+    
+    X, Y, XY_axes = create_patches (
+    raw_data            = raw_data,
+    patch_size          = patch_size,
+    n_patches_per_image = n_patches_per_image,
+    transforms = transforms,
+    save_file           = SaveNpzDirectory + SaveName,
+    )
+
+def generate_2D_patch_training_dataRGB(BaseDirectory, SaveNpzDirectory, SaveName, patch_size = (512,512), n_patches_per_image = 64, transforms = None):
+
+    
+    raw_data = RawData.from_folder (
+    basepath    = BaseDirectory,
+    source_dirs = ['Original'],
+    target_dir  = 'BinaryMask',
+    axes        = 'YXC',
+    )
+    
+    X, Y, XY_axes = create_patches_reduced_target (
+    raw_data            = raw_data,
+    patch_size          = (patch_size[0],patch_size[1], None),
+    n_patches_per_image = n_patches_per_image,
+    transforms = transforms,
+    target_axes         = 'YX',
+    reduction_axes      = 'C',
+    save_file           = SaveNpzDirectory + SaveName,
+    )    
+     
+     
+    
     
 def OrientationArea(filesRaw, UnetModel, Savedir, show_after = 1, min_size = 20, flip = True, UnetCompartmentModel = None, computeAsymmetry = True):
     
