@@ -6,14 +6,14 @@ Flywing Analysis and Quantification tool
 This package can be installed by 
 
 
-`pip install --user vollseg`
+`pip install --user faqt`
 
 If you are building this from the source, clone the repository and install via
 
 ```bash
-git clone https://github.com/kapoorlab/vollseg/
+git clone https://github.com/kapoorlab/faqt/
 
-cd vollseg
+cd faqt
 
 pip install --user -e .
 
