@@ -2,7 +2,7 @@
 Flywing Analysis and Quantification tool 
 
 ![Image](https://github.com/kapoorlab/FAQT/blob/master/images/faqtA.png)
-![Image](https://github.com/kapoorlab/FAQT/blob/master/images/faqtB.png| width=100)
+![Image](https://github.com/kapoorlab/FAQT/blob/master/images/faqtB.png | width=100)
 ## Installation
 This package can be installed by 
 
