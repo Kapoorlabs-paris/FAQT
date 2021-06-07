@@ -100,7 +100,31 @@ def remove_big_objects(ar, max_size=6400, connectivity=1, in_place=False):
     return out
 
 
+def UNETPrediction(filesRaw, model,Savedir, min_size, n_tiles, axis,show_after = 1):
 
+    count = 0
+    for fname in filesRaw:
+            count = count + 1
+            print('Applying UNET prediction')
+            Name = os.path.basename(os.path.splitext(fname)[0])
+            image = imread(fname)
+            Segmented = model.predict(image, axis, n_tiles = n_tiles)
+            thresh = threshold_otsu(Segmented)
+            Binary = Segmented > thresh
+            
+            #Postprocessing steps
+            Filled = binary_fill_holes(Binary)
+            Finalimage = label(Filled)
+            Finalimage = fill_label_holes(Finalimage)
+           
+                    
+            Finalimage = relabel_sequential(Finalimage)[0]
+            
+            if count%show_after == 0:
+                    doubleplot(image, Finalimage, "Original", "Segmentation")
+            imwrite(Savedir + Name + '.tif', Finalimage.astype('uint16'))
+
+    return Finalimage
 
  
 def WingArea(LeftImage, RightImage):
