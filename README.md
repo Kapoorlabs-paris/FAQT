@@ -11,7 +11,7 @@ This package can be installed by
 If you are building this from the source, clone the repository and install via
 
 ```bash
-git clone https://github.com/kapoorlab/faqt/
+git clone https://github.com/kapoorlab/FAQT/
 
 cd faqt
 
@@ -32,8 +32,8 @@ Pipenv allows you to install dependencies in a virtual environment.
 pip install --user pipenv
 
 # clone the repository and sync the dependencies
-git clone https://github.com/kapoorlab/vollseg/
-cd vollseg
+git clone https://github.com/kapoorlab/FAQT/
+cd faqt
 pipenv sync
 
 # make the current package available
