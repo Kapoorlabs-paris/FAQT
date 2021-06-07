@@ -1,7 +1,7 @@
 # FAQT
 Flywing Analysis and Quantification tool 
 
-
+![Image](https://github.com/kapoorlab/FAQT/blob/master/images/faqtA.png)
 ## Installation
 This package can be installed by 
 
