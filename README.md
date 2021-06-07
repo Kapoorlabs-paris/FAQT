@@ -59,3 +59,4 @@ Under MIT license. See [LICENSE](LICENSE).
 
 - Varun Kapoor <randomaccessiblekapoor@gmail.com>
 - Blanco Obregon Dalmiro
+- Laura Boulan
