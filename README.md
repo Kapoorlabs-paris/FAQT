@@ -1,6 +1,6 @@
 # FAQT
 Flywing Analysis and Quantification tool 
-
+![Image](https://github.com/kapoorlab/FAQT/blob/master/images/faqtD.png)
 ![Image](https://github.com/kapoorlab/FAQT/blob/master/images/faqtA.png)
 ![Image](https://github.com/kapoorlab/FAQT/blob/master/images/faqtC.png)
 ![Image](https://github.com/kapoorlab/FAQT/blob/master/images/faqtB.png)
