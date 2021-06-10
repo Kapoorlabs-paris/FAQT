@@ -35,7 +35,7 @@ from skimage.segmentation import  relabel_sequential
 from skimage import morphology
 from scipy.ndimage.measurements import find_objects
 from scipy.ndimage.morphology import  binary_dilation, binary_erosion
-from skimage.util import invert as invertimage
+from skimage.util import invert 
 from skimage import measure
 from skimage.filters import sobel
 from skimage.measure import label
@@ -149,7 +149,8 @@ def AsymmetryComputer(MaskResults,AsymmetryResults,AsymmetryResultsName, extra_t
             
             filesRawRight = glob.glob(Raw_pathRight)
             filesRawLeft = glob.glob(Raw_pathLeft)
-            
+            filesRawRight.sort()
+            filesRawLeft.sort()
             
             AllRightArea = []
             AllLeftArea = []
@@ -283,8 +284,12 @@ def OrientationArea(filesRaw, UnetModel, Savedir, show_after = 1, min_size = 20,
         Path(AsymmetryResults).mkdir(exist_ok = True)
         for fname in filesRaw:
           
+                    #Read image  
                     Name = os.path.basename(os.path.splitext(fname)[0])
+            
                     image = imread(fname)
+
+
                     image = image[:,:,0:3]
                     #DO the segmentation
                     Segmented = UnetModel.predict(image,axes)
@@ -299,39 +304,54 @@ def OrientationArea(filesRaw, UnetModel, Savedir, show_after = 1, min_size = 20,
                     coords = np.vstack([x, y])
 
                     cov = np.cov(coords)
+                    evals, evecs = np.linalg.eig(cov) 
+
+
+                    sort_indices = np.argsort(evals)[::-1]
+                    x_v1, y_v1 = evecs[:, sort_indices[0]]  # Eigenvector with largest eigenvalue
+                    x_v2, y_v2 = evecs[:, sort_indices[1]]
+
+                    #Uncomment lines below to see the eigenvectors
+                    #scale = 20
+                    #plt.plot([x_v1*-scale*2, x_v1*scale*2],
+                            #[y_v1*-scale*2, y_v1*scale*2], color='red')
+                    #plt.plot([x_v2*-scale, x_v2*scale],
+                            #[y_v2*-scale, y_v2*scale], color='blue')
+
+                    #plt.axis('equal')
+                    #plt.gca().invert_yaxis()  # Match the image system with origin at top left
+                    #plt.show()
+                    theta1 = np.arctan((x_v1)/(y_v1)) 
+                    theta2 = np.arctan((x_v2)/(y_v2)) 
+                    theta2deg = theta2 * 180 / 3.14
+                    theta1deg = theta1 * 180/  3.14
+
+
+                    rotation_mat = np.matrix([[np.cos(theta2), -np.sin(theta2)],
+                              [np.sin(theta2), np.cos(theta2)]])
+                    rotatedimage = transform.rotate(image,-theta2deg, resize = False, mode = "edge" )
+
+
+                    #Trial 2
+                    #DO bad segmentation
+
+                    testimage = rotatedimage[:,:,0] 
+                    thresh = threshold_otsu(testimage) 
+                    testimage = testimage > thresh
+                    testimage = invert(testimage)
+                    testimage = label(testimage)
+
+                    testimage = remove_small_objects(testimage, min_size)
+                    testimage = testimage > 0
+
+
+
+                    ySec, xSec = np.nonzero(testimage)
+                    xSec = xSec - np.mean(xSec)
+                    ySec = ySec - np.mean(ySec)
+                    coordsSec = np.vstack([xSec, ySec])
+
                     try:
-                        evals, evecs = np.linalg.eig(cov) 
-
-
-                        sort_indices = np.argsort(evals)[::-1]
-                        x_v1, y_v1 = evecs[:, sort_indices[0]]  # Eigenvector with largest eigenvalue
-                        x_v2, y_v2 = evecs[:, sort_indices[1]]
-
-                        theta2 = np.arctan((x_v2)/(y_v2)) 
-                        theta2deg = theta2 * 180 / 3.14
-                        rotatedimage = transform.rotate(image,-theta2deg, resize = False, mode = "edge" )
-
-
-                        #Trial 2
-                        #DO bad segmentation
-
-                        testimage = rotatedimage[:,:,0] 
-                        thresh = threshold_otsu(testimage) 
-                        testimage = testimage > thresh
-                        testimage = invert(testimage)
-                        testimage = label(testimage)
-
-                        testimage = remove_small_objects(testimage, min_size)
-                        testimage = testimage > 0
-
-
-
-                        ySec, xSec = np.nonzero(testimage)
-                        xSec = xSec - np.mean(xSec)
-                        ySec = ySec - np.mean(ySec)
-                        coordsSec = np.vstack([xSec, ySec])
-
-                       
                         covSec = np.cov(coordsSec)
                         evalsSec, evecsSec = np.linalg.eig(covSec) 
 
@@ -342,56 +362,53 @@ def OrientationArea(filesRaw, UnetModel, Savedir, show_after = 1, min_size = 20,
 
 
                         theta1Sec = np.arctan((x_v1Sec)/(y_v1Sec)) 
+                        theta2Sec = np.arctan((x_v2Sec)/(y_v2Sec)) 
+                        theta2degSec = theta2Sec * 180 / 3.14
                         theta1degSec = theta1Sec * 180/3.14
-                       
+                    except: 
+                            theta2degSec = 0
+                            theta1degSec = 0
 
-                        count = count + 1
-                        
-                        if flip:
-                                if Name[-1] == 'R'and theta1degSec < 0:
-                                    flippedimage = np.flip(rotatedimage, axis = 0)
-                                    imwrite(Savedir + Name + '.tif', flippedimage)
-                                    if count%show_after == 0:
-                                       doubleplot(image, flippedimage, "Original", "Rotated-and-Flipped")
-                                       
-                                if Name[-1] == 'L'and theta1degSec >= 0:
-                                    flippedimage = np.flip(rotatedimage, axis = 0)
-                                    imwrite(Savedir + Name + '.tif', flippedimage)
-                                    if count%show_after == 0:
-                                       doubleplot(image, flippedimage, "Original", "Rotated-and-Flipped")        
-
-                        if Name[-1] == 'R'and theta1degSec >= 0:   
-                            imwrite(Savedir + Name + '.tif', rotatedimage)
-                            if count%show_after == 0:
-                                doubleplot(image, rotatedimage, "Original", "Rotated")    
-
-                           
-
-                        if Name[-1] == 'L'and theta1degSec < 0:   
-                            imwrite(Savedir + Name + '.tif', rotatedimage)
-                            if count%show_after == 0:
-                                doubleplot(image, rotatedimage, "Original", "Rotated")
-                     
-                    except:
+                    count = count + 1
                     
-                          pass
+                    if flip and Name[-1] == 'R'and theta1degSec < 0:                                          #uncomment to apply vertical flipping
+                        flippedimage = np.flip(rotatedimage, axis = 0)
+                        imwrite(Savedir + Name + '.tif', flippedimage)
+                        if count%show_after == 0:
+                           doubleplot(image, flippedimage, "Original", "Rotated-and-Flipped")
+
+                    if Name[-1] == 'R'and theta1degSec >= 0:   
+                        imwrite(Savedir + Name + '.tif', rotatedimage)
+                        if count%show_after == 0:
+                            doubleplot(image, rotatedimage, "Original", "Rotated")    
+
+                    if flip and Name[-1] == 'L'and theta1degSec >= 0:                                         #uncomment to apply vertical flipping
+                        flippedimage = np.flip(rotatedimage, axis = 0)
+                        imwrite(Savedir + Name + '.tif', flippedimage)
+                        if count%show_after == 0:
+                           doubleplot(image, flippedimage, "Original", "Rotated-and-Flipped")    
+
+                    if Name[-1] == 'L'and theta1degSec < 0:   
+                        imwrite(Savedir + Name + '.tif', rotatedimage)
+                        if count%show_after == 0:
+                            doubleplot(image, rotatedimage, "Original", "Rotated")
                       
                         
-                    Raw_path = os.path.join(Savedir, '*tif')
+        Raw_path = os.path.join(Savedir, '*tif')
 
-                    axes = 'YXC'
-                    filesRaw = glob.glob(Raw_path)
-                    filesRaw.sort
-                    count = 0
-                    
-                    for fname in filesRaw:
+        axes = 'YXC'
+        filesRaw = glob.glob(Raw_path)
+        filesRaw.sort
+        count = 0
+        
+        for fname in filesRaw:
                                 
                                 #Read image        
                                 image = imread(fname)
                                 Name = os.path.basename(os.path.splitext(fname)[0])
                           
                               
-                                if Name[-1] == 'L':
+                                if Name[-1] == 'R':
                                     image = transform.rotate(image,  180,  resize=False)
                                     image = np.flip(image, axis = 0)
                                     imwrite(Savedir + Name + '.tif', image)
@@ -403,7 +420,7 @@ def OrientationArea(filesRaw, UnetModel, Savedir, show_after = 1, min_size = 20,
                                 Segmented = UnetModel.predict(x,axes)
                                 thresh = threshold_otsu(Segmented) 
                                 Binary = Segmented > thresh
-                                Filled = binary_fill_holes(Binary)
+                                Filled = binary_fill_holes(Binary[:,:,0])
                                 Finalimage = remove_small_objects(Filled, min_size)
                          
                                 #Compartment model
@@ -411,14 +428,16 @@ def OrientationArea(filesRaw, UnetModel, Savedir, show_after = 1, min_size = 20,
                                         SegmentedCompartment = UnetCompartmentModel.predict(x,axes)
                                         threshComp = threshold_otsu(SegmentedCompartment) 
                                         BinaryCompartment = SegmentedCompartment > threshComp
-                                        FilledCompartment = binary_fill_holes(BinaryCompartment)
+                                        FilledCompartment =label(BinaryCompartment[:,:,0])
+                                        FilledCompartment = fill_label_holes(FilledCompartment)
+                                        FilledCompartment = FilledCompartment > 0
                                
                                 
-                                
+                                FilledCompartment = np.multiply(FilledCompartment,Finalimage)
                                 if count%show_after == 0:
-                                  doubleplot(image,Finalimage[:,:,0], 'Original', 'UNET', plotTitle = 'Segmentation Result' )
+                                  doubleplot(image,Finalimage, 'Original', 'UNET', plotTitle = 'Segmentation Result' )
                                   if UnetCompartmentModel is not None:
-                                         doubleplot(image,FilledCompartment[:,:,0], 'Original', 'UNET', plotTitle = 'Compartment Segmentation Result' )
+                                         doubleplot(image,FilledCompartment, 'Original', 'UNET', plotTitle = 'Compartment Segmentation Result' )
                                 count = count + 1 
                                 imwrite((MaskResults + 'Mask' + Name + '.tif' ) , Finalimage.astype('uint8'))
                                 if UnetCompartmentModel is not None:
@@ -426,10 +445,10 @@ def OrientationArea(filesRaw, UnetModel, Savedir, show_after = 1, min_size = 20,
                                     imwrite((MaskCompartmentResults + 'MaskCompartment' + Name + '.tif' ) , FilledCompartment.astype('uint8'))
                                     
                     
-                    AsymmetryComputer(MaskResults,AsymmetryResults,AsymmetryResultsName, extra_title = "", computeAsymmetry = computeAsymmetry )
-                    if UnetCompartmentModel is not None:
-                          AsymmetryComputer(MaskCompartmentResults,AsymmetryCompartmentResults,AsymmetryCompartmentResultsName, extra_title = "Compartment", computeAsymmetry = computeAsymmetry )
-                
+        AsymmetryComputer(MaskResults,AsymmetryResults,AsymmetryResultsName, extra_title = "", computeAsymmetry = computeAsymmetry )
+        if UnetCompartmentModel is not None:
+                  AsymmetryComputer(MaskCompartmentResults,AsymmetryCompartmentResults,AsymmetryCompartmentResultsName, extra_title = "Compartment", computeAsymmetry = computeAsymmetry )
+        
 
 def Label_counter(filesRaw, ProbabilityThreshold, Resultdir, min_size = 10 ):
 
