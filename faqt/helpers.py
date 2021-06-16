@@ -273,9 +273,11 @@ def OrientationArea(filesRaw, UnetModel, Savedir, show_after = 1, min_size = 20,
         MaskResults = Savedir + '/MaskResults/'
         if UnetCompartmentModel is not None:
             MaskCompartmentResults = Savedir + '/MaskCompartmentResults/'
+            MaskCompartmentLabelResults = Savedir + '/MaskLabelCompartmentResults/'
             AsymmetryCompartmentResults = Savedir + '/AsymmetryCompartmentResults/'
             AsymmetryCompartmentResultsName = 'AsymmetryCompartment'
             Path(MaskCompartmentResults).mkdir(exist_ok = True)
+            Path(MaskCompartmentLabelResults).mkdir(exist_ok = True)
             Path(AsymmetryCompartmentResults).mkdir(exist_ok = True)
             
         AsymmetryResults = Savedir + '/AsymmetryResults/'
@@ -443,6 +445,7 @@ def OrientationArea(filesRaw, UnetModel, Savedir, show_after = 1, min_size = 20,
                                 if UnetCompartmentModel is not None:
                                     
                                     imwrite((MaskCompartmentResults + 'MaskCompartment' + Name + '.tif' ) , FilledCompartment.astype('uint8'))
+                                    imwrite((MaskCompartmentLabelResults + 'MaskCompartment' + Name + '.tif' ) , label(FilledCompartment).astype('uint16'))
                                     
                     
         AsymmetryComputer(MaskResults,AsymmetryResults,AsymmetryResultsName, extra_title = "", computeAsymmetry = computeAsymmetry )
