@@ -266,7 +266,7 @@ def generate_2D_patch_training_dataRGB(BaseDirectory, SaveNpzDirectory, SaveName
      
     
     
-def OrientationArea(filesRaw, UnetModel, Savedir, show_after = 1, min_size = 20, flip = True, UnetCompartmentModel = None, computeAsymmetry = True):
+def OrientationArea(filesRaw, UnetModel, Savedir, show_after = 1, min_size = 20, flip = True, UnetCompartmentModel = None,UnetVeinModel = None, computeAsymmetry = True):
     
         count = 0
         axes = 'YXC'
@@ -277,9 +277,15 @@ def OrientationArea(filesRaw, UnetModel, Savedir, show_after = 1, min_size = 20,
             MaskCompartmentLabelResults = Savedir + '/MaskLabelCompartmentResults/'
             AsymmetryCompartmentResults = Savedir + '/AsymmetryCompartmentResults/'
             AsymmetryCompartmentResultsName = 'AsymmetryCompartment'
+            
             Path(MaskCompartmentResults).mkdir(exist_ok = True)
             Path(MaskCompartmentLabelResults).mkdir(exist_ok = True)
             Path(AsymmetryCompartmentResults).mkdir(exist_ok = True)
+        
+        
+        if UnetVeinModel is not None:
+            MaskVeinResults = Savedir + '/VeinResults/'
+            Path(MaskVeinResults).mkdir(exist_ok = True)
             
         AsymmetryResults = Savedir + '/AsymmetryResults/'
         AsymmetryResultsName = 'Asymmetry'
@@ -435,12 +441,23 @@ def OrientationArea(filesRaw, UnetModel, Savedir, show_after = 1, min_size = 20,
                                         FilledCompartment = fill_label_holes(FilledCompartment)
                                         FilledCompartment = FilledCompartment > 0
                                
-                                
+                                if UnetVeinModel is not None:
+                                    
+                                        SegmentedVeins = UnetVeinModel.predict(x, axes)
+                                        threshVein = threshold_otsu(SegmentedVeins) 
+                                        BinaryVein = SegmentedVein > threshVein
+                                        FilledVein =label(BinaryVein[:,:,0])
+                                        FilledVein = fill_label_holes(FilledVein)
+                                        FilledVein = FilledVein > 0
+                                indices = [np.where(FilledVein > 0)]    
                                 FilledCompartment = np.multiply(FilledCompartment,Finalimage)
+                                FilledCompartment[indeices] = 0
                                 if count%show_after == 0:
                                   doubleplot(image,Finalimage, 'Original', 'UNET', plotTitle = 'Segmentation Result' )
                                   if UnetCompartmentModel is not None:
                                          doubleplot(image,FilledCompartment, 'Original', 'UNET', plotTitle = 'Compartment Segmentation Result' )
+                                  if UnetVeinModel is not None:
+                                        doubleplot(image,FilledVein, 'Original', 'UNET', plotTitle = 'Vein Segmentation Result' )
                                 count = count + 1 
                                 imwrite((MaskResults + 'Mask' + Name + '.tif' ) , Finalimage.astype('uint8'))
                                 if UnetCompartmentModel is not None:
