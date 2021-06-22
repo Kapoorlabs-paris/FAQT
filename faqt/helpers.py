@@ -445,13 +445,13 @@ def OrientationArea(filesRaw, UnetModel, Savedir, show_after = 1, min_size = 20,
                                     
                                         SegmentedVeins = UnetVeinModel.predict(x, axes)
                                         threshVein = threshold_otsu(SegmentedVeins) 
-                                        BinaryVein = SegmentedVein > threshVein
+                                        BinaryVein = SegmentedVeins > threshVein
                                         FilledVein =label(BinaryVein[:,:,0])
                                         FilledVein = fill_label_holes(FilledVein)
                                         FilledVein = FilledVein > 0
                                 indices = [np.where(FilledVein > 0)]    
                                 FilledCompartment = np.multiply(FilledCompartment,Finalimage)
-                                FilledCompartment[indeices] = 0
+                                FilledCompartment[indices] = 0
                                 if count%show_after == 0:
                                   doubleplot(image,Finalimage, 'Original', 'UNET', plotTitle = 'Segmentation Result' )
                                   if UnetCompartmentModel is not None:
