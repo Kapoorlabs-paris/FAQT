@@ -108,6 +108,7 @@ def UNETPrediction(filesRaw, model,Savedir, min_size, n_tiles, axis,show_after =
             print('Applying UNET prediction')
             Name = os.path.basename(os.path.splitext(fname)[0])
             image = imread(fname)
+            
             Segmented = model.predict(image, axis, n_tiles = n_tiles)
             thresh = threshold_otsu(Segmented)
             Binary = Segmented > thresh
