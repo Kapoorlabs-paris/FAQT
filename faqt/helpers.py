@@ -100,6 +100,52 @@ def remove_big_objects(ar, max_size=6400, connectivity=1, in_place=False):
     return out
 
 
+
+            
+
+def ProjUNETPrediction(filesRaw, modelVein, modelHair, SavedirMax, SavedirAvg,SavedirVein, SavedirHair, min_size, n_tiles, axis,show_after = 1):
+
+    count = 0
+    Path(SavedirMax).mkdir(exist_ok=True)
+    Path(SavedirAvg).mkdir(exist_ok=True)
+    Path(SavedirVein).mkdir(exist_ok=True)
+    Path(SavedirHair).mkdir(exist_ok=True)
+    for fname in filesRaw:
+            count = count + 1
+            
+            
+            
+           
+            Name = os.path.basename(os.path.splitext(fname)[0])
+            image = imread(fname)
+            maximage = np.max(image, axis = 0)
+            avgimage = np.mean(image, axis = 0)
+            imwrite(SavedirMax + Name + '.tif', maximage.astype('uint8'))
+            imwrite(SavedirAvg + Name + '.tif', avgimage.astype('uint8'))
+            
+            Hairimage = Segment(maximage, modelHair, axis, n_tiles, show_after =  show_after)
+            Veinimage = Segment(avgimage, modelVein, axis, n_tiles, show_after =  show_after)
+          
+            Veinimagecopy = Veinimage
+            indices = np.where(Veinimagecopy > 0)
+            Hairimage[indices] = 0
+            
+            if count%show_after == 0:
+                    multiplot(maximage, Veinimage, Hairimage, "Original", "Vein", "Hair")
+            imwrite(SavedirVein + Name + '.tif', Veinimage.astype('uint16'))
+            imwrite(SavedirHair + Name + '.tif', Hairimage.astype('uint16'))
+
+          
+
+def Segment(image, model, axis, n_tiles, show_after =  1 ):
+    
+            Segmented = model.predict(image, axis, n_tiles = n_tiles)
+            thresh = threshold_otsu(Segmented)
+            Binary = Segmented > thresh
+            
+            
+            return Binary
+
 def UNETPrediction(filesRaw, model,Savedir, min_size, n_tiles, axis,show_after = 1):
 
     count = 0
@@ -446,7 +492,7 @@ def OrientationArea(filesRaw, UnetModel, Savedir, show_after = 1, min_size = 20,
                                         SegmentedVeins = UnetVeinModel.predict(x, axes)
                                         threshVein = threshold_otsu(SegmentedVeins) 
                                         BinaryVein = SegmentedVeins > threshVein
-                                        
+                                        BinaryVein = BinaryVein[:,:,0]
                                 indices = np.where(BinaryVein > 0)    
                                 FilledCompartment = np.multiply(FilledCompartment,Finalimage)
                                 FilledCompartment[indices] = 0
@@ -455,7 +501,7 @@ def OrientationArea(filesRaw, UnetModel, Savedir, show_after = 1, min_size = 20,
                                   if UnetCompartmentModel is not None:
                                          doubleplot(image,FilledCompartment, 'Original', 'UNET', plotTitle = 'Compartment Segmentation Result' )
                                   if UnetVeinModel is not None:
-                                        doubleplot(image,FilledVein, 'Original', 'UNET', plotTitle = 'Vein Segmentation Result' )
+                                        doubleplot(image,BinaryVein, 'Original', 'UNET', plotTitle = 'Vein Segmentation Result' )
                                 count = count + 1 
                                 imwrite((MaskResults + 'Mask' + Name + '.tif' ) , Finalimage.astype('uint8'))
                                 if UnetCompartmentModel is not None:
